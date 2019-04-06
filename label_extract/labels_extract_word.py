@@ -10,12 +10,19 @@ import subprocess
 import re
 import os
 import json
+from string import punctuation
 
 main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/word/'
 documents = os.listdir(main_dir)
 
 training_set = {}
 target = '/Users/samuelrodriguezmedina/Google Drive/Language Technology/thesis/datasets/SDGs_articles/wpf'
+
+mappings = {
+    'g': 'SDG|goals|goal',
+    'i': 'indicators|indicator',
+    't': 'targets|target'
+}
 
 
 class Text():
@@ -33,6 +40,20 @@ class DocDocument:
             processed_text = re.sub(' +', ' ', line.strip().replace('\xa0', ' ').replace('\n', ' '))
             self.paragraphs.append(Text(processed_text))
 
+
+def extract_type(type_):
+    for key, pattern in mappings.items():
+        if type_.lower() in pattern:
+            return key
+
+
+def extract_labels(type_, numbers):
+    labels = []
+    label_type = extract_type(type_)
+    label_numbers = set([i.strip(punctuation) for i in numbers.split() if i != 'and'])
+    for number in label_numbers:
+        labels.append(f'{label_type}_{number}')
+    return labels
 
 for document in documents:
     path = os.path.join(main_dir + document)
@@ -53,21 +74,23 @@ for document in documents:
             text = paragraph.text
             # To avoid extracting Millennium Goals
             if 'millennium' not in text.lower():
-                goal_pattern = '(SDG|goal)\s?(\d+)'
-                target_pattern = '(target)\s([a-d\d*\.?]*)'
-                indicator_pattern = '(indicator)\s([a-d\d*\.?]*)'
-
-                goals = re.findall(goal_pattern, text, re.I)
-                if goals:
-                    for goal in goals:
-                        goal_label = f'g_{goal[1]}'
-                        if text not in training_set:
-                            training_set[text] = {
-                                'labels': [],
-                                'doc_id': document
-                            }
-                        if goal_label not in training_set[text]:
-                            training_set[text]['labels'].append(goal_label)
+                patterns = [
+                    f"({mappings['g']})\s+([,*\s*\d+]+(and)*[\s+\d+]*)",
+                    #f"({mappings['g']})\s?(\d+)",
+                    #f"({mappings['t']})\s([\d*\.][a-d\d*\.?]*)",
+                    #f"({mappings['i']})\s([\d*\.][a-d\d*\.?]*)"
+                ]
+                for pattern in patterns:
+                    goals = re.findall(pattern, text, re.I)
+                    for type_, numbers, _ in goals:
+                        if numbers:
+                            labels = extract_labels(type_, numbers)
+                            if text not in training_set:
+                                training_set[text] = {
+                                    'labels': [],
+                                    'doc_id': document
+                                }
+                            training_set[text]['labels'].extend(labels)
 
 
 
@@ -75,9 +98,11 @@ for document in documents:
 - if one label happens more than once, should they be weighted? Or maybe just use a set, do not repeat labels
 - if only one label is mentioned in a document, label all paragraphs as that label
 -indicators refer to targets, and targets to goals, but this does not work the other way around
-- try without 'target', 'goal', and see what results you get: (target)\s\d+(\.\d+)*
 - check what happens with text in track changes
 - Goals are to be found in texts about Millenium Development Goals. Should we include them?
+- Still get Millennium goals if the word millennium is not present in the paragraph
+- try to eliminate text with all the labels, since they're ambiguous
+
 '''
 
 
