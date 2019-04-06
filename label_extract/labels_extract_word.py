@@ -26,9 +26,11 @@ class Text():
 class DocDocument:
     def __init__(self, extracted_string):
         self.paragraphs = []
+        # Decode and split by paragraphs
         extracted_list = extracted_string.decode('utf-8').split('\n\n')
         for line in extracted_list:
-            processed_text = re.sub(' +', ' ', line.strip().replace('\xa0', ' ').replace('\n', ''))
+            # Eliminate extra spaces, replace space characters and eliminate break lines
+            processed_text = re.sub(' +', ' ', line.strip().replace('\xa0', ' ').replace('\n', ' '))
             self.paragraphs.append(Text(processed_text))
 
 
@@ -36,10 +38,11 @@ for document in documents:
     path = os.path.join(main_dir + document)
     doc = None
     try:
-        # Use docx
+        # Docx
         doc = Document(path)
     except:
         try:
+            # Doc
             extracted = subprocess.check_output(['antiword', '-t', path])
             doc = DocDocument(extracted)
         except Exception as e:
@@ -48,21 +51,23 @@ for document in documents:
     if doc:
         for paragraph in doc.paragraphs:
             text = paragraph.text
-            goal_pattern = '(SDG|goal)\s?(\d+)'
-            target_pattern = '(target)\s?(\d+)'
-            indicator_pattern = ''
+            # To avoid extracting Millennium Goals
+            if 'millennium' not in text.lower():
+                goal_pattern = '(SDG|goal)\s?(\d+)'
+                target_pattern = '(target)\s([a-d\d*\.?]*)'
+                indicator_pattern = '(indicator)\s([a-d\d*\.?]*)'
 
-            goals = re.findall(goal_pattern, text, re.I)
-            if goals:
-                for goal in goals:
-                    goal_label = f'g_{goal[1]}'
-                    if text not in training_set:
-                        training_set[text] = {
-                            'labels': [],
-                            'doc_id': document
-                        }
-                    if goal_label not in training_set[text]:
-                        training_set[text]['labels'].append(goal_label)
+                goals = re.findall(goal_pattern, text, re.I)
+                if goals:
+                    for goal in goals:
+                        goal_label = f'g_{goal[1]}'
+                        if text not in training_set:
+                            training_set[text] = {
+                                'labels': [],
+                                'doc_id': document
+                            }
+                        if goal_label not in training_set[text]:
+                            training_set[text]['labels'].append(goal_label)
 
 
 
@@ -72,6 +77,7 @@ for document in documents:
 -indicators refer to targets, and targets to goals, but this does not work the other way around
 - try without 'target', 'goal', and see what results you get: (target)\s\d+(\.\d+)*
 - check what happens with text in track changes
+- Goals are to be found in texts about Millenium Development Goals. Should we include them?
 '''
 
 
