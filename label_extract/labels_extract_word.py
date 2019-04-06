@@ -12,17 +12,6 @@ import os
 import json
 from string import punctuation
 
-main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/word/'
-documents = os.listdir(main_dir)
-
-training_set = {}
-target = '/Users/samuelrodriguezmedina/Google Drive/Language Technology/thesis/datasets/SDGs_articles/wpf'
-
-mappings = {
-    'g': 'SDG|goals|goal',
-    'i': 'indicators|indicator',
-    't': 'targets|target'
-}
 
 
 class Text():
@@ -50,10 +39,26 @@ def extract_type(type_):
 def extract_labels(type_, numbers):
     labels = []
     label_type = extract_type(type_)
-    label_numbers = set([i.strip(punctuation) for i in numbers.split() if i != 'and'])
+    label_numbers = set([i.strip(punctuation) for i in numbers.split() if 'and' not in i])
     for number in label_numbers:
         labels.append(f'{label_type}_{number}')
     return labels
+
+
+main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/word/'
+documents = os.listdir(main_dir)
+doc_tracker = {}
+
+training_set = {}
+target = '/Users/samuelrodriguezmedina/Google Drive/Language Technology/thesis/datasets/SDGs_articles/wpf'
+
+mappings = {
+    'g': 'SDG|goals|goal',
+    't': 'target',
+    'i': 'indicator'
+}
+
+
 
 for document in documents:
     path = os.path.join(main_dir + document)
@@ -75,22 +80,38 @@ for document in documents:
             # To avoid extracting Millennium Goals
             if 'millennium' not in text.lower():
                 patterns = [
-                    f"({mappings['g']})\s+([,*\s*\d+]+(and)*[\s+\d+]*)",
-                    #f"({mappings['g']})\s?(\d+)",
-                    #f"({mappings['t']})\s([\d*\.][a-d\d*\.?]*)",
-                    #f"({mappings['i']})\s([\d*\.][a-d\d*\.?]*)"
+                    f"({mappings['g']})\s+([,*\s*\d+]+[and]*[\s+\d+]*)",
+                    f"({mappings['t']})(\s+\d+\.[\d+a-d])",
+                    f"({mappings['i']})(\s+\d+\.[\d+a-d]\.\d+)"
                 ]
                 for pattern in patterns:
                     goals = re.findall(pattern, text, re.I)
-                    for type_, numbers, _ in goals:
+                    for type_, numbers in goals:
                         if numbers:
                             labels = extract_labels(type_, numbers)
-                            if text not in training_set:
-                                training_set[text] = {
-                                    'labels': [],
-                                    'doc_id': document
-                                }
-                            training_set[text]['labels'].extend(labels)
+                            if labels:
+                                if text not in training_set:
+                                    training_set[text] = {
+                                        'labels': [],
+                                        'doc_id': document
+                                    }
+                                training_set[text]['labels'].extend(labels)
+                                training_set[text]['labels'] = list(set(training_set[text]['labels']))
+                                if document not in doc_tracker:
+                                    doc_tracker[document] = []
+                                doc_tracker[document].extend(labels)
+
+
+# Track documents with one
+for doc, labels in doc_tracker.items():
+    if len(set(labels)) == 1:
+        print(doc, labels)
+
+# Save results to file
+
+#with open('training_set.json', 'w') as fo:
+#    json.dump(training_set, fo)
+#print(len(training_set))
 
 
 
@@ -102,13 +123,12 @@ for document in documents:
 - Goals are to be found in texts about Millenium Development Goals. Should we include them?
 - Still get Millennium goals if the word millennium is not present in the paragraph
 - try to eliminate text with all the labels, since they're ambiguous
+- should labels happening more than once be more weighted?
+- E_CN.17_2007_14 -> goal 10 years later
 
 '''
 
 
-with open('training_set.json', 'w') as fo:
-    json.dump(training_set, fo)
-print(len(training_set))
 
 
 
