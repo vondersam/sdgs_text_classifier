@@ -7,7 +7,13 @@ import os
 import json
 from string import punctuation
 import PyPDF2
+from bs4 import BeautifulSoup
 
+MAPPINGS = {
+        'g': 'sdg|goals|goal',
+        't': 'target',
+        'i': 'indicator'
+    }
 
 
 class Text:
@@ -19,8 +25,22 @@ class Document:
     """
     Doc containing all paragraphs from .doc, .docx, .pdf
     """
-    def __init__(self):
+    def __init__(self, filepath):
         self.paragraphs = []
+        self.extract_paragraphs(filepath)
+
+
+    def extract_paragraphs(self, filepath):
+        base = os.path.basename(filepath)
+        extension = os.path.splitext(base)[1]
+        if extension == '.doc':
+            self.from_word(filepath)
+        if extension == '.pdf':
+            self.from_pdf(filepath)
+        if extension == '.html':
+            self.from_html(filepath)
+        else:
+            print("Cannot process files in that format")
 
     def from_word(self, file):
         try:
@@ -29,7 +49,7 @@ class Document:
         except:
             try:
                 # Doc
-                extracted_string = subprocess.check_output(['antiword', '-t', path])
+                extracted_string = subprocess.check_output(['antiword', '-t', file])
                 # Decode and split by paragraphs
                 extracted_list = extracted_string.decode('utf-8').split('\n\n')
                 for paragraph in extracted_list:
@@ -53,8 +73,11 @@ class Document:
         except Exception as e:
             print(e)
 
-    def from_html(self, html):
-        pass
+    def from_html(self, file):
+        with open(file, 'rb') as f:
+            soup = BeautifulSoup(f, 'html.parser')
+            for paragraph in soup.stripped_strings:
+                self.paragraphs.append(Text(paragraph))
 
 
 def extract_type(type_):
@@ -63,7 +86,7 @@ def extract_type(type_):
     :param type_:
     :return:
     """
-    for key, pattern in mappings.items():
+    for key, pattern in MAPPINGS.items():
         if type_.lower() in pattern:
             return key
 
@@ -83,66 +106,78 @@ def extract_labels(type_, numbers):
     return labels
 
 
-main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/word/'
-documents = os.listdir(main_dir)
-doc_tracker = {}
 
-training_set = {}
-mappings = {
-    'g': 'sdg|goals|goal',
-    't': 'target',
-    'i': 'indicator'
-}
-
-
-for document in documents:
-    path = os.path.join(main_dir + document)
-    word = True
-    pdf = False
-    doc = Document()
-
-    if word:
-        doc.from_word(path)
-    if pdf:
-        doc.from_pdf(path)
-
-    for paragraph in doc.paragraphs:
-        text = paragraph.text
-        # To avoid extracting Millennium Goals
-        if 'millennium' not in text.lower():
-            patterns = [
-                f"({mappings['g']})\s+([,*\s*\d+]+[and]*[\s+\d+]*)",
-                f"({mappings['t']})(\s+\d+\.[\d+a-d])",
-                f"({mappings['i']})(\s+\d+\.[\d+a-d]\.\d+)"
-            ]
-            for pattern in patterns:
-                goals = re.findall(pattern, text, re.I)
-                for type_, numbers in goals:
-                    if numbers:
-                        labels = extract_labels(type_, numbers)
-                        if labels:
-                            if text not in training_set:
-                                training_set[text] = {
-                                    'labels': [],
-                                    'doc_id': document
-                                }
-                            training_set[text]['labels'].extend(labels)
-                            training_set[text]['labels'] = list(set(training_set[text]['labels']))
-                            if document not in doc_tracker:
-                                doc_tracker[document] = []
-                            doc_tracker[document].extend(labels)
+def trans_labels(labels):
+    results = dict()
+    for i in range(1,18):
+        label = f'g_{i}'
+        if label in labels:
+            results[label] = True
+        else:
+            results[label] = False
+    return results
 
 
-# Track documents with one
-#for doc, labels in doc_tracker.items():
-#    if len(set(labels)) == 1:
-#        print(doc, labels)
+def extract(filepath, folders=[], spacy_format=False, save=False):
+    documents = []
+    for folder in os.listdir(filepath):
+        if folder in folders:
+            documents += [os.path.join(folder, f) for f in os.listdir(os.path.join(filepath, folder))]
+    doc_tracker = {}
+    training_set = {}
 
-# Save results to file
+    for document in documents:
+        path = os.path.join(filepath + document)
+        print(path)
+        doc = Document(path)
 
-with open('pdf_set.json', 'w') as fo:
-    json.dump(training_set, fo)
-print(len(training_set))
+        for paragraph in doc.paragraphs:
+            text = paragraph.text
+            # To avoid extracting Millennium Goals
+            if 'millennium' not in text.lower():
+                patterns = [
+                    f"({MAPPINGS['g']})\s+([,*\s*\d+]+[and]*[\s+\d+]*)",
+                    f"({MAPPINGS['t']})(\s+\d+\.[\d+a-d])",
+                    f"({MAPPINGS['i']})(\s+\d+\.[\d+a-d]\.\d+)"
+                ]
+                for pattern in patterns:
+                    goals = re.findall(pattern, text, re.I)
+                    for type_, numbers in goals:
+                        if numbers:
+                            labels = extract_labels(type_, numbers)
+                            if labels:
+                                if text not in training_set:
+                                    training_set[text] = {
+                                        'cats': labels
+                                        #'labels': [],
+                                        #'doc_id': document
+                                    }
+                                training_set[text]['cats'].extend(labels)
+                                training_set[text]['cats'] = list(set(training_set[text]['cats']))
+
+                                #if document not in doc_tracker:
+                                #    doc_tracker[document] = []
+                                #doc_tracker[document].extend(labels)
+    if spacy_format:
+        """
+        final_training = {}
+        for k, v in training_set.items():
+            final_training[k] = {'cats': trans_labels(v['cats'])}
+        """
+
+        # Track documents with one
+        # for doc, labels in doc_tracker.items():
+        #    if len(set(labels)) == 1:
+        #        print(doc, labels)
+    if save:
+        with open('html.json', 'w') as fo:
+            json.dump(training_set, fo)
+        print(len(training_set))
+
+
+main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
+folders = ['word', 'other_html', 'pdf']
+extract(main_dir, folders, save=True)
 
 '''
 - we need to do more processing:
@@ -159,6 +194,7 @@ print(len(training_set))
 - should labels happening more than once be more weighted?
 - E_CN.17_2007_14 -> goal 10 years later
 - scraping 'https://sustainabledevelopment.un.org/sdg10'
+- evaluate the very simple classifier that we have
 '''
 
 
