@@ -5,7 +5,7 @@ from urllib import request
 import shutil
 
 
-directory = "/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/other_html"
+directory = "/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/downloads"
 
 for filename in os.listdir(directory):
     new_name = os.path.join(directory, filename.replace('.', '_') + '.html')

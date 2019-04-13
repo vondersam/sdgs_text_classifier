@@ -29,11 +29,14 @@ class Document:
             self.from_html(filepath)
         else:
             print(f"File with extension {extension} not read.")
+        print(filepath)
 
     def from_word(self, file):
         try:
             # Docx
-            self.paragraphs = Docx(file).paragraphs
+            paragraphs = Docx(file).paragraphs
+            for paragraphs in paragraphs:
+                self.paragraphs.append(Text(paragraphs))
         except:
             try:
                 # Doc
