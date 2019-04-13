@@ -27,7 +27,7 @@ def format_labels(type_, numbers):
     """
     labels = []
     label_type = extract_type(type_)
-    label_numbers = set([i.strip(punctuation) for i in numbers.split() if i not in 'and'])
+    label_numbers = set([i.strip(punctuation) for i in numbers.split() if i.lower() not in 'and'])
     for number in label_numbers:
         labels.append(f'{label_type}_{number}')
     return labels
@@ -42,3 +42,5 @@ def trans_labels(labels):
         else:
             results[label] = False
     return results
+
+

@@ -5,12 +5,8 @@ import subprocess
 import re
 from docx import Document as Docx
 from utils.extract_utils import MAPPINGS, format_labels
-
-
-
-class Text:
-    def __init__(self, t):
-        self.text = t
+from utils.text_utils import Text
+from io import BytesIO
 
 
 class Document:
@@ -45,23 +41,20 @@ class Document:
                 # Decode and split by paragraphs
                 extracted_list = extracted_string.decode('utf-8').split('\n\n')
                 for paragraph in extracted_list:
-                    # Eliminate extra spaces, replace space characters and eliminate break lines
-                    processed_paragraph = re.sub(' +', ' ', paragraph.strip().replace('\xa0', ' ').replace('\n', ' '))
-                    self.paragraphs.append(Text(processed_paragraph))
+                    self.paragraphs.append(Text(paragraph))
             except Exception as e:
                 print(e)
 
     def from_pdf(self, file):
         try:
             with open(file, 'rb') as fi:
-                pdfReader = PyPDF2.PdfFileReader(fi)
+                pdfReader = PyPDF2.PdfFileReader(BytesIO(fi.read()))
+                #pdfReader = PyPDF2.PdfFileReader(fi)
                 for i in range(pdfReader.numPages):
                     extracted_string = pdfReader.getPage(i).extractText()
                     extracted_list = extracted_string.split('\n\n')
                     for line in extracted_list:
-                        # Eliminate extra spaces, replace space characters and eliminate break lines
-                        processed_text = re.sub(' +', ' ', line.strip().replace('\xa0', ' ').replace('\n', ' '))
-                        self.paragraphs.append(Text(processed_text))
+                        self.paragraphs.append(Text(line))
         except Exception as e:
             print(e)
 
@@ -70,6 +63,7 @@ class Document:
             soup = BeautifulSoup(f, 'html.parser')
             for paragraph in soup.stripped_strings:
                 self.paragraphs.append(Text(paragraph))
+
 
     def extract_labels(self):
         labelled_data = {}
@@ -97,8 +91,4 @@ class Document:
                             labelled_data[text]['cats'].extend(labels)
                             labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
 
-        #print(labelled_data)
         return labelled_data
-        #if document not in doc_tracker:
-        #    doc_tracker[document] = []
-        #doc_tracker[document].extend(labels)

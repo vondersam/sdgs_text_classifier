@@ -5,10 +5,11 @@ from urllib import request
 import shutil
 
 
-os.chdir("/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/other_html")
+directory = "/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/other_html"
 
-for filename in os.listdir():
-    os.rename(filename, '.html')
+for filename in os.listdir(directory):
+    new_name = os.path.join(directory, filename.replace('.', '_') + '.html')
+    os.rename(os.path.join(directory, filename), new_name)
     '''
         if re.search('=(.*)&Lang', filename):
         new_filename = re.search('=(.*)&Lang', filename).group(1).replace('%2F', '_') + '.doc'
