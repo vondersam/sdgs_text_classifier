@@ -37,27 +37,8 @@ def extract(filepath, output_filename, folders=[], spacy_format=False, save=Fals
 
 main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
 output_filename = 'working.json'
-#folders = ['word', 'other_html', 'pdf']
-folders = ['word']
+folders = ['word', 'other_html', 'pdf']
 extract(main_dir, output_filename, folders, save=True)
-
-'''
-- we need to do more processing:
-    - delete numbered bullet points starting a paragraph
-    - delete noisy symbols such as bar |
-    - what should we do with the numbers, label them? <number>
-- if one label happens more than once, should they be weighted? Or maybe just use a set, do not repeat labels
-- if only one label is mentioned in a document, label all paragraphs as that label
--indicators refer to targets, and targets to goals, but this does not work the other way around
-- check what happens with text in track changes
-- Goals are to be found in texts about Millenium Development Goals. Should we include them?
-- Still get Millennium goals if the word millennium is not present in the paragraph
-- try to eliminate text with all the labels, since they're ambiguous
-- should labels happening more than once be more weighted?
-- E_CN.17_2007_14 -> goal 10 years later
-- scraping 'https://sustainabledevelopment.un.org/sdg10'
-- evaluate the very simple classifier that we have
-'''
 
 
 
