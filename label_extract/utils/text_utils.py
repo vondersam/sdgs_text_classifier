@@ -13,7 +13,7 @@ class Text:
             (r'\t', ''),                # Tabulations
             (r'\xa0', ' '),             # Non-breaking space \xa0
             (r'(\r\n|\r|\n)', ' '),     # Line breaks. Check this one as there might be some paragraphs that need to be separated
-            (r'\•', ''),                 # Bullet points
+            (r'\•', ''),                # Bullet points
             (r'^\s?\(\w+\)\s*', '')
         ]
         for pattern, substitute in patterns:

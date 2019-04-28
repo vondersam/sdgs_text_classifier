@@ -4,7 +4,6 @@ import json
 from string import punctuation
 
 
-
 def listdir_nohidden(path):
     for f in os.listdir(path):
         if not f.startswith('.'):

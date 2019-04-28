@@ -1,4 +1,4 @@
-from string import punctuation
+from string import punctuation as punct
 
 MAPPINGS = {
         'g': '(sdgs|sdg|goals|goal)',
@@ -18,18 +18,22 @@ def extract_type(type_):
             return key
 
 
-def format_labels(type_, numbers):
+def format_labels(type_, numbers, normalize):
     """
-
     :param type_:
     :param numbers:
     :return: list of labels
     """
     labels = []
     label_type = extract_type(type_)
-    label_numbers = set([i.strip(punctuation) for i in numbers.split() if i.lower() not in 'and'])
+    print(numbers)
+    label_numbers = set([i.strip(punct) for i in numbers.replace(',', ' ').split() if i.lower() not in 'and'])
     for number in label_numbers:
-        labels.append(f'{label_type}_{number}')
+        if label_type in 'it' and normalize:
+            label = f"g_{number.split('.')[0]}"
+            labels.append(label)
+        else:
+            labels.append(f'{label_type}_{number}')
     return labels
 
 

@@ -27,6 +27,8 @@ class Document:
             self.from_pdf(filepath)
         elif extension == '.html':
             self.from_html(filepath)
+        elif extension == '.txt':
+            self.from_txt(filepath)
         else:
             print(f"File with extension {extension} not read.")
         print(filepath)
@@ -67,8 +69,13 @@ class Document:
             for paragraph in soup.stripped_strings:
                 self.paragraphs.append(Text(paragraph))
 
+    def from_txt(self, file):
+        with open(file, 'r') as f:
+            data = f.readlines()
+            for paragraph in data:
+                self.paragraphs.append(Text(paragraph))
 
-    def extract_labels(self):
+    def extract_labels(self, normalize):
         labelled_data = {}
         for paragraph in self.paragraphs:
             text = paragraph.text
@@ -83,7 +90,7 @@ class Document:
                     goals = re.findall(pattern, text, re.I)
 
                     for type_, numbers in goals:
-                        labels = format_labels(type_, numbers)
+                        labels = format_labels(type_, numbers, normalize)
                         if labels:
                             if text not in labelled_data:
                                 labelled_data[text] = {
