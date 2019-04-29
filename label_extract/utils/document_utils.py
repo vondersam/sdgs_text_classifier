@@ -82,7 +82,7 @@ class Document:
             # To avoid extracting Millennium Goals
             if 'millennium' not in text.lower():
                 patterns = [
-                    MAPPINGS['g'] + r"\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
+                    MAPPINGS['g'] + r"\W*\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
                     MAPPINGS['t'] + r"(\s+\d+\.[\d+a-d])",
                     MAPPINGS['i'] + r"(\s+\d+\.[\d+a-d]\.\d+)"
                 ]

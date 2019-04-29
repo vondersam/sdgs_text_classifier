@@ -1,9 +1,9 @@
 from string import punctuation as punct
 
 MAPPINGS = {
-        'g': '(sdgs|sdg|goals|goal)',
-        't': '(target)',
-        'i': '(indicator)'
+        'g': r'(sdgs|sdg|goals|goal)',
+        't': r'(target)',
+        'i': r'(indicator)'
     }
 
 
