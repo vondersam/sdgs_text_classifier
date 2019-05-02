@@ -1,7 +1,7 @@
 #https://textract.readthedocs.io/en/stable/
 import os
 import json
-from utils.document_utils import Document
+from utils.document import Document
 from utils.file_utils import get_files
 from utils.extract_utils import trans_labels
 import time
@@ -33,17 +33,15 @@ def extract(filepath, output_filename, folders=[], spacy_format=False, save=Fals
 
 main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
 output_filename = 'final_final.json'
-#folders = ['word', 'other_html', 'pdf']
-folders = ['txt']
+folders = ['word', 'other_html', 'pdf']
+#folders = ['txt']
 
-#start = time.time()
+start = time.time()
 #extract(main_dir, output_filename, folders, save=True, normalize=True)
-#end = time.time()
-#print(end - start)
+end = time.time()
+print(end - start)
 
 
-result = extract(main_dir, output_filename, folders, save=True, normalize=True)
-print(result)
 
 
 """

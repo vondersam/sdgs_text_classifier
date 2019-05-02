@@ -5,7 +5,7 @@ import subprocess
 import re
 from docx import Document as Docx
 from utils.extract_utils import MAPPINGS, format_labels
-from utils.text_utils import Text
+from utils.text import Text
 from io import BytesIO
 
 
@@ -74,6 +74,7 @@ class Document:
             data = f.readlines()
             for paragraph in data:
                 self.paragraphs.append(Text(paragraph))
+                print(Text(paragraph).text)
 
     def extract_labels(self, normalize):
         labelled_data = {}
