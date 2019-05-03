@@ -18,6 +18,16 @@ def extract_type(type_):
             return key
 
 
+def extract_num(numbers):
+    results = []
+    for i in numbers.replace(',', ' ').split():
+        if i.lower() not in 'and':
+            i = i.strip(punct).split('.')[0]
+            if int(i) in range(1, 19):
+                results.append(i)
+    return set(results)
+
+
 def format_labels(type_, numbers, normalize):
     """
     :param type_:
@@ -26,14 +36,16 @@ def format_labels(type_, numbers, normalize):
     """
     labels = []
     label_type = extract_type(type_)
-    print(numbers)
-    label_numbers = set([i.strip(punct) for i in numbers.replace(',', ' ').split() if i.lower() not in 'and'])
+    #label_numbers = set([i.strip(punct) for i in numbers.replace(',', ' ').split() if i.lower() not in 'and'])
+    label_numbers = extract_num(numbers)
+    print(label_numbers)
     for number in label_numbers:
-        if label_type in 'it' and normalize:
-            label = f"g_{number.split('.')[0]}"
-            labels.append(label)
-        else:
-            labels.append(f'{label_type}_{number}')
+        # Use goals only, instead of indices and targets
+        label = f"g_{number}"
+        labels.append(label)
+        # Use goals, indices and targets
+        #else:
+        #    labels.append(f'{label_type}_{number}')
     return labels
 
 

@@ -74,12 +74,13 @@ class Document:
             data = f.readlines()
             for paragraph in data:
                 self.paragraphs.append(Text(paragraph))
-                print(Text(paragraph).text)
 
     def extract_labels(self, normalize):
         labelled_data = {}
+
         for paragraph in self.paragraphs:
             text = paragraph.text
+            millenium_text = False
             # To avoid extracting Millennium Goals
             if 'millennium' not in text.lower():
                 patterns = [
@@ -101,5 +102,12 @@ class Document:
                                 }
                             labelled_data[text]['cats'].extend(labels)
                             labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
+            else:
+                millenium_text = True
+        # If we only find one goal label in the document and the document is not about millenium goals
+        if len(labelled_data) == 1 and not millenium_text:
+            print("document with online one label. Also check it Millenium goals are added.")
+            #labelled_data[text]['cats'].extend(all_labels)
+            #labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
 
         return labelled_data
