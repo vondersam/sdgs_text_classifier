@@ -31,7 +31,7 @@ class Document:
             self.from_txt(filepath)
         else:
             print(f"File with extension {extension} not read.")
-        print(filepath)
+        #print(filepath)
 
     def from_word(self, file):
         try:
@@ -47,8 +47,14 @@ class Document:
                 extracted_list = extracted_string.decode('utf-8').split('\n\n')
                 for paragraph in extracted_list:
                     self.paragraphs.append(Text(paragraph))
-            except Exception as e:
-                print(e)
+            except:
+                # If Antiword does not work, convert to txt
+                subprocess.run(['textutil', '-convert', 'txt', file])
+                file = file.replace('.doc', '.txt')
+                with open(file, 'r') as f:
+                    data = f.readlines()
+                    for paragraph in data:
+                        self.paragraphs.append(Text(paragraph))
 
     def from_pdf(self, file):
         try:
@@ -105,8 +111,10 @@ class Document:
             else:
                 millenium_text = True
         # If we only find one goal label in the document and the document is not about millenium goals
-        if len(labelled_data) == 1 and not millenium_text:
-            print("document with online one label. Also check it Millenium goals are added.")
+        # It should include also Sustainable Development Goal, or SDG
+        #if len(labelled_data) == 1 and not millenium_text:
+            #print("document with online one label. Also check it Millenium goals are added.")
+            #print(labelled_data)
             #labelled_data[text]['cats'].extend(all_labels)
             #labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
 
