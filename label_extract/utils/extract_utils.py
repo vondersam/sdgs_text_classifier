@@ -17,13 +17,19 @@ def extract_type(type_):
         if type_.lower() in pattern:
             return key
 
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 def extract_num(numbers):
     results = []
     for i in numbers.replace(',', ' ').split():
         if i.lower() not in 'and':
             i = i.strip(punct).split('.')[0]
-            if int(i) in range(1, 19):
+            if is_number(i) and int(i) in range(1, 19):
                 results.append(i)
     return set(results)
 
@@ -36,15 +42,13 @@ def format_labels(type_, numbers, normalize):
     """
     labels = []
     label_type = extract_type(type_)
-    #label_numbers = set([i.strip(punct) for i in numbers.replace(',', ' ').split() if i.lower() not in 'and'])
     label_numbers = extract_num(numbers)
-    print(label_numbers)
     for number in label_numbers:
         # Use goals only, instead of indices and targets
         label = f"g_{number}"
         labels.append(label)
         # Use goals, indices and targets
-        #else:
+        # else:
         #    labels.append(f'{label_type}_{number}')
     return labels
 

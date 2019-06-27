@@ -7,15 +7,18 @@ from docx import Document as Docx
 from utils.extract_utils import MAPPINGS, format_labels
 from utils.text import Text
 from io import BytesIO
+from langdetect import detect
+
 
 
 class Document:
     """
     Doc containing all paragraphs from .doc, .docx, .pdf
     """
-    def __init__(self, filepath):
+    def __init__(self, filepath, filename):
         self.paragraphs = []
         self.from_any(filepath)
+        self.name = filename
 
 
     def from_any(self, filepath):
@@ -60,7 +63,6 @@ class Document:
         try:
             with open(file, 'rb') as fi:
                 pdfReader = PyPDF2.PdfFileReader(BytesIO(fi.read()))
-                #pdfReader = PyPDF2.PdfFileReader(fi)
                 for i in range(pdfReader.numPages):
                     extracted_string = pdfReader.getPage(i).extractText()
                     extracted_list = extracted_string.split('\n\n')
@@ -72,8 +74,15 @@ class Document:
     def from_html(self, file):
         with open(file, 'rb') as f:
             soup = BeautifulSoup(f, 'html.parser')
+            # Strip out any code from the text
+            for script in soup(["script", "style"]):
+                script.decompose()
             for paragraph in soup.stripped_strings:
-                self.paragraphs.append(Text(paragraph))
+                try:
+                    if detect(paragraph) == 'en':
+                        self.paragraphs.append(Text(paragraph))
+                except:
+                    pass
 
     def from_txt(self, file):
         with open(file, 'r') as f:
@@ -83,10 +92,10 @@ class Document:
 
     def extract_labels(self, normalize):
         labelled_data = {}
+        unlabelled_data = {}
 
         for paragraph in self.paragraphs:
             text = paragraph.text
-            millenium_text = False
             # To avoid extracting Millennium Goals
             if 'millennium' not in text.lower():
                 patterns = [
@@ -102,20 +111,21 @@ class Document:
                         if labels:
                             if text not in labelled_data:
                                 labelled_data[text] = {
-                                    'cats': labels
-                                    #'labels': [],
-                                    #'doc_id': document
+                                    'cats': labels,
+                                    'doc_id': self.name
                                 }
                             labelled_data[text]['cats'].extend(labels)
                             labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
+                        else:
+                            unlabelled_data[text] = None
             else:
-                millenium_text = True
+                unlabelled_data[text] = None
+        return labelled_data, unlabelled_data
+
         # If we only find one goal label in the document and the document is not about millenium goals
         # It should include also Sustainable Development Goal, or SDG
-        #if len(labelled_data) == 1 and not millenium_text:
-            #print("document with online one label. Also check it Millenium goals are added.")
-            #print(labelled_data)
-            #labelled_data[text]['cats'].extend(all_labels)
-            #labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
-
-        return labelled_data
+        # if len(labelled_data) == 1 and not millenium_text:
+        # print("document with online one label. Also check it Millenium goals are added.")
+        # print(labelled_data)
+        # labelled_data[text]['cats'].extend(all_labels)
+        # labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))

@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 import os
 import json
 from string import punctuation
+from utils.extract_utils import MAPPINGS
+from utils.text import Text
 
 
 def listdir_nohidden(path):
@@ -16,7 +18,7 @@ def extract_type(type_):
     :param type_:
     :return:
     """
-    for key, pattern in mappings.items():
+    for key, pattern in MAPPINGS.items():
         if type_.lower() in pattern:
             return key
 
@@ -34,23 +36,6 @@ def extract_labels(type_, numbers):
     return labels
 
 
-
-training_set = {}
-mappings = {
-    'g': 'sdg|goals|goal',
-    't': 'target',
-    'i': 'indicator'
-}
-
-def trans_labels(labels):
-    results = dict()
-    for i in range(1,18):
-        label = f"g_{i}"
-        if label in labels:
-            results[label] = 1
-        else:
-            results[label] = 0
-    return results
 
 main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/html/'
 documents = os.listdir(main_dir)
@@ -81,14 +66,16 @@ for filename in listdir_nohidden(main_dir):
                     texts = [text]
                 for text in texts:
                     text = text.replace('\n', ' ')
-                    if text not in training_set:
-                        training_set[text] = {
+                    text = Text(text).text
+                    if text:
+                        if text not in training_set:
+                            training_set[text] = {
                             'cats': labels
                             # 'labels': [],
                             # 'doc_id': document
-                        }
-                    training_set[text]['cats'].extend(labels)
-                    training_set[text]['cats'] = list(set(training_set[text]['cats']))
+                            }
+                        training_set[text]['cats'].extend(labels)
+                        training_set[text]['cats'] = list(set(training_set[text]['cats']))
 
 print(len(training_set))
 with open('html_tags.json', 'w') as fo:
