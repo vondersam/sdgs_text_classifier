@@ -15,7 +15,7 @@ class Document:
     """
     Doc containing all paragraphs from .doc, .docx, .pdf
     """
-    def __init__(self, filepath, filename):
+    def __init__(self, filepath, filename=None):
         self.paragraphs = []
         self.from_any(filepath)
         self.name = filename
@@ -34,7 +34,7 @@ class Document:
             self.from_txt(filepath)
         else:
             print(f"File with extension {extension} not read.")
-        #print(filepath)
+
 
     def from_word(self, file):
         try:
@@ -68,8 +68,8 @@ class Document:
                     extracted_list = extracted_string.split('\n\n')
                     for line in extracted_list:
                         self.paragraphs.append(Text(line))
-        except Exception as e:
-            print(e)
+        except:
+            pass
 
     def from_html(self, file):
         with open(file, 'rb') as f:
@@ -90,42 +90,36 @@ class Document:
             for paragraph in data:
                 self.paragraphs.append(Text(paragraph))
 
-    def extract_labels(self, normalize):
-        labelled_data = {}
-        unlabelled_data = {}
 
-        for paragraph in self.paragraphs:
-            text = paragraph.text
-            # To avoid extracting Millennium Goals
-            if 'millennium' not in text.lower():
-                patterns = [
-                    MAPPINGS['g'] + r"\W*\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
-                    MAPPINGS['t'] + r"(\s+\d+\.[\d+a-d])",
-                    MAPPINGS['i'] + r"(\s+\d+\.[\d+a-d]\.\d+)"
-                ]
-                for pattern in patterns:
-                    goals = re.findall(pattern, text, re.I)
+def extract_labels(doc, p=None):
+    labelled = {}
+    unlabelled = {}
 
-                    for type_, numbers in goals:
-                        labels = format_labels(type_, numbers, normalize)
-                        if labels:
-                            if text not in labelled_data:
-                                labelled_data[text] = {
-                                    'cats': labels,
-                                    'doc_id': self.name
-                                }
-                            labelled_data[text]['cats'].extend(labels)
-                            labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
-                        else:
-                            unlabelled_data[text] = None
-            else:
-                unlabelled_data[text] = None
-        return labelled_data, unlabelled_data
-
-        # If we only find one goal label in the document and the document is not about millenium goals
-        # It should include also Sustainable Development Goal, or SDG
-        # if len(labelled_data) == 1 and not millenium_text:
-        # print("document with online one label. Also check it Millenium goals are added.")
-        # print(labelled_data)
-        # labelled_data[text]['cats'].extend(all_labels)
-        # labelled_data[text]['cats'] = list(set(labelled_data[text]['cats']))
+    for paragraph in doc.paragraphs:
+        text = paragraph.text
+        # To avoid extracting Millennium Goals
+        if 'millennium' not in text.lower() or ' mdg ' not in text.lower():
+            patterns = [
+                MAPPINGS['g'] + r"\W*\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
+                MAPPINGS['t'] + r"(\s+\d+\.[\d+a-d])",
+                MAPPINGS['i'] + r"(\s+\d+\.[\d+a-d]\.\d+)"
+            ]
+            labelled_text = False
+            for pattern in patterns:
+                goals = re.findall(pattern, text, re.I)
+                for type_, numbers in goals:
+                    labels = format_labels(type_, numbers)
+                    if labels:
+                        if text not in labelled:
+                            labelled[text] = {
+                                'cats': labels
+                            }
+                        labelled[text]['cats'].extend(labels)
+                        labelled[text]['cats'] = list(set(labelled[text]['cats']))
+                        labelled_text = True
+            if labelled_text == False:
+                unlabelled[text] = None
+    if p:
+        p.put((labelled, unlabelled))
+    else:
+        return labelled, unlabelled

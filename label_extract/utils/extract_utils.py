@@ -29,27 +29,21 @@ def extract_num(numbers):
     for i in numbers.replace(',', ' ').split():
         if i.lower() not in 'and':
             i = i.strip(punct).split('.')[0]
-            if is_number(i) and int(i) in range(1, 19):
+            if is_number(i) and int(i) in range(1, 18):
                 results.append(i)
     return set(results)
 
 
-def format_labels(type_, numbers, normalize):
+def format_labels(type_, numbers):
     """
     :param type_:
     :param numbers:
     :return: list of labels
     """
     labels = []
-    label_type = extract_type(type_)
     label_numbers = extract_num(numbers)
     for number in label_numbers:
-        # Use goals only, instead of indices and targets
-        label = f"g_{number}"
-        labels.append(label)
-        # Use goals, indices and targets
-        # else:
-        #    labels.append(f'{label_type}_{number}')
+        labels.append(number)
     return labels
 
 

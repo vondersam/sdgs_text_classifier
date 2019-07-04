@@ -29,10 +29,14 @@ def extract_labels(type_, numbers):
     :return: list of labels
     """
     labels = []
-    label_type = extract_type(type_)
     label_numbers = set([i.strip(punctuation) for i in numbers.split() if 'and' not in i])
-    for number in label_numbers:
-        labels.append(f"{label_type}_{number}")
+    if type_:
+        label_type = extract_type(type_)
+        for number in label_numbers:
+            labels.append(f"{label_type}_{number}")
+    else:
+        for number in label_numbers:
+            labels.append(number)
     return labels
 
 
@@ -77,7 +81,6 @@ for filename in listdir_nohidden(main_dir):
                         training_set[text]['cats'].extend(labels)
                         training_set[text]['cats'] = list(set(training_set[text]['cats']))
 
-print(len(training_set))
 with open('html_tags.json', 'w') as fo:
     json.dump(training_set, fo)
 
