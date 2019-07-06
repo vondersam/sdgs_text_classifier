@@ -34,6 +34,11 @@ if __name__ == '__main__':
     pd.DataFrame.from_dict(final_labelled, orient='index').to_csv('labelled.csv')
     pd.DataFrame.from_dict(final_unlabelled, orient='index').to_csv('unlabelled.csv')
 
+    with open('labelled.json', 'w') as fo:
+        json.dump(final_labelled, fo)
+    with open('unlabelled.json', 'w') as fo:
+        json.dump(final_unlabelled, fo)
+
     stats = {
         'labelled': len(final_labelled),
         'unlabelled': len(final_unlabelled)
