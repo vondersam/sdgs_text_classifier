@@ -16,19 +16,14 @@ from multiprocessing import Process, Queue
 if __name__ == '__main__':
     start = time.time()
     main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
-    folders = ['pdf']
+    folders = ['word', 'other_html', 'pdf', 'extra_pdf', 'extra_word', 'downloads']
     files = get_files(main_dir, folders)
     final_labelled = {}
     final_unlabelled = {}
-    count = 0
-    limit = 30
-
     q = Queue()
+
     for file in tqdm(files):
-        count += 1
-        if limit == count:
-            break
-        doc = Document(main_dir + file)
+        doc = Document(main_dir + file, filename=file)
         p = Process(target=extract_labels, args=(doc, q,))
         p.start()
         labelled, unlabelled = q.get()
@@ -38,6 +33,7 @@ if __name__ == '__main__':
 
     pd.DataFrame.from_dict(final_labelled, orient='index').to_csv('labelled.csv')
     pd.DataFrame.from_dict(final_unlabelled, orient='index').to_csv('unlabelled.csv')
+
     stats = {
         'labelled': len(final_labelled),
         'unlabelled': len(final_unlabelled)

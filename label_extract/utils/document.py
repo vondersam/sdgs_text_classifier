@@ -1,13 +1,12 @@
 import os
-import PyPDF2
 from bs4 import BeautifulSoup
 import subprocess
 import re
 from docx import Document as Docx
 from utils.extract_utils import MAPPINGS, format_labels
 from utils.text import Text
-from io import BytesIO
 from langdetect import detect
+import slate3k
 
 
 
@@ -62,10 +61,10 @@ class Document:
     def from_pdf(self, file):
         try:
             with open(file, 'rb') as fi:
-                pdfReader = PyPDF2.PdfFileReader(BytesIO(fi.read()))
-                for i in range(pdfReader.numPages):
-                    extracted_string = pdfReader.getPage(i).extractText()
-                    extracted_list = extracted_string.split('\n\n')
+                doc = slate3k.PDF(fi, word_margin=0)
+                for i in range(len(doc)):
+                    extracted_string = doc[i]
+                    extracted_list = extracted_string.split('. \n')
                     for line in extracted_list:
                         self.paragraphs.append(Text(line))
         except:
@@ -79,7 +78,7 @@ class Document:
                 script.decompose()
             for paragraph in soup.stripped_strings:
                 try:
-                    if detect(paragraph) == 'en':
+                    if detect(paragraph) == 'en': # maybe change the language detection to check in all texts instead of only on the htmls.
                         self.paragraphs.append(Text(paragraph))
                 except:
                     pass
@@ -98,7 +97,11 @@ def extract_labels(doc, p=None):
     for paragraph in doc.paragraphs:
         text = paragraph.text
         # To avoid extracting Millennium Goals
-        if 'millennium' not in text.lower() or ' mdg ' not in text.lower():
+        if 'millennium' in text.lower():
+            pass
+        if ' mdg ' in text.lower():
+            pass
+        else:
             patterns = [
                 MAPPINGS['g'] + r"\W*\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
                 MAPPINGS['t'] + r"(\s+\d+\.[\d+a-d])",
@@ -112,7 +115,8 @@ def extract_labels(doc, p=None):
                     if labels:
                         if text not in labelled:
                             labelled[text] = {
-                                'cats': labels
+                                'cats': labels,
+                                'doc_id': doc.name
                             }
                         labelled[text]['cats'].extend(labels)
                         labelled[text]['cats'] = list(set(labelled[text]['cats']))
