@@ -1,23 +1,38 @@
 import os
 from bs4 import BeautifulSoup
 import subprocess
-import re
 from docx import Document as Docx
 from utils.extract_utils import MAPPINGS, format_labels
 from utils.text import Text
 from langdetect import detect
 import slate3k
+import re
 
 
 class Document:
     """
-    Doc containing all paragraphs from .doc, .docx, .pdf, .txt and .html
+    Doc containing all paragraphs from .doc, .docx, .pdf
     """
-    def __init__(self, filepath, filename=None):
+    def __init__(self, filepath, filename):
         self.paragraphs = []
         self.from_any(filepath)
         self.name = filename
+        self.labels = None
+        self.doc_label_from(filename)
 
+    def doc_label_from(self, filename):
+        # If 'goal no.' found in filename, process all doc with that label
+        pattern =  r'goal\W?(?:\b[1-9]\b|\b1[0-7]?\b)'
+        match = re.match(pattern, filename)
+        if match:
+            self.labels = [match.group(1)]
+
+    def add_labels(self, labels):
+        """
+        Override doc.labels from filename if labels are found in the texts
+        """
+        if labels:
+            self.labels = labels
 
     def from_any(self, filepath):
         base = os.path.basename(filepath)
@@ -33,7 +48,6 @@ class Document:
         else:
             print(f"File with extension {extension} not read.")
 
-
     def from_word(self, file):
         try:
             # Docx
@@ -43,9 +57,9 @@ class Document:
         except:
             try:
                 # Doc
-                extracted_string = subprocess.check_output(['antiword', '-t', file])
+                string = subprocess.check_output(['antiword', '-t', file])
                 # Decode and split by paragraphs
-                extracted_list = extracted_string.decode('utf-8').split('\n\n')
+                extracted_list = string.decode('utf-8').split('\n\n')
                 for paragraph in extracted_list:
                     self.paragraphs.append(Text(paragraph))
             except:
@@ -62,8 +76,8 @@ class Document:
             with open(file, 'rb') as fi:
                 doc = slate3k.PDF(fi, word_margin=0)
                 for i in range(len(doc)):
-                    extracted_string = doc[i]
-                    extracted_list = extracted_string.split('. \n')
+                    string = doc[i]
+                    extracted_list = string.split('. \n')
                     for line in extracted_list:
                         self.paragraphs.append(Text(line))
         except:
@@ -77,7 +91,7 @@ class Document:
                 script.decompose()
             for paragraph in soup.stripped_strings:
                 try:
-                    if detect(paragraph) == 'en': # maybe change the language detection to check in all texts instead of only on the htmls.
+                    if detect(paragraph) == 'en':
                         self.paragraphs.append(Text(paragraph))
                 except:
                     pass
@@ -89,16 +103,14 @@ class Document:
                 self.paragraphs.append(Text(paragraph))
 
 
-def extract_labels(doc, q=None):
-    """
-    Loop through all texts in a document, extracts labelled texts with labels
-    and collects unlabelled texts. Filters out texts related to Millennium Development Goals
-    :param doc:
-    :param q: queue for multiprocessing
-    :return: dictionary or tuple (queue) with labelled and unlabelled texts
-    """
+def extract_labels(doc, p=None):
     labelled = {}
     unlabelled = {}
+    patterns = [
+                MAPPINGS['g'] + r"\W*\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
+                MAPPINGS['t'] + r"(\s+\d+\.[\d+a-d])",
+                MAPPINGS['i'] + r"(\s+\d+\.[\d+a-d]\.\d+)"
+            ]
 
     for paragraph in doc.paragraphs:
         text = paragraph.text
@@ -108,17 +120,15 @@ def extract_labels(doc, q=None):
         if ' mdg ' in text.lower():
             pass
         else:
-            patterns = [
-                MAPPINGS['g'] + r"\W*\s+(,?\s*\b\d{1,2}\b[and\s\b\d{1,2}\b]*)",
-                MAPPINGS['t'] + r"(\s+\d+\.[\d+a-d])",
-                MAPPINGS['i'] + r"(\s+\d+\.[\d+a-d]\.\d+)"
-            ]
             labelled_text = False
             for pattern in patterns:
                 goals = re.findall(pattern, text, re.I)
                 for type_, numbers in goals:
                     labels = format_labels(type_, numbers)
-                    if labels:
+                    doc.add_labels(labels)
+
+                    # If labels from text or from filename
+                    if doc.labels:
                         if text not in labelled:
                             labelled[text] = {
                                 'cats': labels,
@@ -127,9 +137,11 @@ def extract_labels(doc, q=None):
                         labelled[text]['cats'].extend(labels)
                         labelled[text]['cats'] = list(set(labelled[text]['cats']))
                         labelled_text = True
+
             if labelled_text == False:
                 unlabelled[text] = None
-    if q:
-        q.put((labelled, unlabelled))
+
+    if p:
+        p.put((labelled, unlabelled))
     else:
         return labelled, unlabelled

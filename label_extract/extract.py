@@ -15,7 +15,7 @@ from multiprocessing import Process, Queue
 if __name__ == '__main__':
     start = time.time()
     main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
-    #folders = ['word', 'other_html', 'pdf', 'extra_pdf', 'extra_word', 'downloads']
+    #folders = ['word', 'other_html', 'pdf', 'extra_pdf', 'extra_word', 'downloads', 'downloadable_pdfs']
     folders = ['pdf', 'extra_pdf']
     files = get_files(main_dir, folders)
     final_labelled = {}
