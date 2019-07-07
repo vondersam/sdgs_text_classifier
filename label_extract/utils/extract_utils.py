@@ -31,20 +31,20 @@ def extract_num(numbers):
             i = i.strip(punct).split('.')[0]
             if is_number(i) and int(i) in range(1, 18):
                 results.append(i)
-    return set(results)
+    return list(set(results))
 
 
-def format_labels(type_, numbers):
+def format_labels(extracted_goals):
     """
-    :param type_:
+    type_, numbers
+    :param extracted_goals: regex-extracted list with type_ and number of labels
     :param numbers:
     :return: list of labels
     """
     labels = []
-    label_numbers = extract_num(numbers)
-    for number in label_numbers:
-        labels.append(number)
-    return labels
+    for type_, numbers in extracted_goals:
+        labels.extend(extract_num(numbers))
+    return list(set(labels))
 
 
 def trans_labels(labels):

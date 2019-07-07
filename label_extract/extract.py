@@ -16,20 +16,21 @@ if __name__ == '__main__':
     start = time.time()
     main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
     #folders = ['word', 'other_html', 'pdf', 'extra_pdf', 'extra_word', 'downloads', 'downloadable_pdfs']
-    folders = ['pdf', 'extra_pdf']
+    folders = ['other_html', 'downloadable_pdfs', 'downloads']
     files = get_files(main_dir, folders)
     final_labelled = {}
     final_unlabelled = {}
     q = Queue()
 
     for file in tqdm(files):
-        doc = Document(main_dir + file, filename=file)
-        p = Process(target=extract_labels, args=(doc, q,))
-        p.start()
-        labelled, unlabelled = q.get()
-        final_labelled = {**final_labelled, **labelled}
-        final_unlabelled = {**final_unlabelled, **unlabelled}
-        p.join()
+        if "goal-12" in file:
+            doc = Document(main_dir + file, filename=file)
+            p = Process(target=extract_labels, args=(doc, q,))
+            p.start()
+            labelled, unlabelled = q.get()
+            final_labelled = {**final_labelled, **labelled}
+            final_unlabelled = {**final_unlabelled, **unlabelled}
+            p.join()
 
     save_files(final_labelled, final_unlabelled)
     print(time.time()-start)

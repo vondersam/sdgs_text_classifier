@@ -1,4 +1,5 @@
 import os
+import PyPDF2
 from bs4 import BeautifulSoup
 import subprocess
 from docx import Document as Docx
@@ -9,30 +10,28 @@ import slate3k
 import re
 
 
+
 class Document:
     """
     Doc containing all paragraphs from .doc, .docx, .pdf
     """
     def __init__(self, filepath, filename):
         self.paragraphs = []
-        self.from_any(filepath)
         self.name = filename
-        self.labels = None
+        self.filename_label = []
+        self.from_any(filepath)
         self.doc_label_from(filename)
+
+    def get_filename_label(self):
+        return self.filename_label
 
     def doc_label_from(self, filename):
         # If 'goal no.' found in filename, process all doc with that label
-        pattern =  r'goal\W?(?:\b[1-9]\b|\b1[0-7]?\b)'
-        match = re.match(pattern, filename)
+        pattern =  r'goal\W?((?:\b[1-9]\b|\b1[0-7]?\b))'
+        match = re.search(pattern, filename)
         if match:
-            self.labels = [match.group(1)]
+            self.filename_label = [int(match.group(1))]
 
-    def add_labels(self, labels):
-        """
-        Override doc.labels from filename if labels are found in the texts
-        """
-        if labels:
-            self.labels = labels
 
     def from_any(self, filepath):
         base = os.path.basename(filepath)
@@ -103,7 +102,7 @@ class Document:
                 self.paragraphs.append(Text(paragraph))
 
 
-def extract_labels(doc, p=None):
+def extract_labels(doc, q=None):
     labelled = {}
     unlabelled = {}
     patterns = [
@@ -113,7 +112,10 @@ def extract_labels(doc, p=None):
             ]
 
     for paragraph in doc.paragraphs:
+        labels = []
+        goals = []
         text = paragraph.text
+
         # To avoid extracting Millennium Goals
         if 'millennium' in text.lower():
             pass
@@ -122,26 +124,31 @@ def extract_labels(doc, p=None):
         else:
             labelled_text = False
             for pattern in patterns:
-                goals = re.findall(pattern, text, re.I)
-                for type_, numbers in goals:
-                    labels = format_labels(type_, numbers)
-                    doc.add_labels(labels)
+                goals_extracted = re.findall(pattern, text, re.I)
+                goals.extend(goals_extracted)
+            text_labels = format_labels(goals)
 
-                    # If labels from text or from filename
-                    if doc.labels:
-                        if text not in labelled:
-                            labelled[text] = {
-                                'cats': labels,
-                                'doc_id': doc.name
-                            }
-                        labelled[text]['cats'].extend(labels)
-                        labelled[text]['cats'] = list(set(labelled[text]['cats']))
-                        labelled_text = True
+            if text_labels:
+                labelled[text] = {
+                        'cats': text_labels,
+                        'doc_id': doc.name
+                    }
+                labelled[text]['cats'].extend(labels)
+                labelled[text]['cats'] = list(set(labelled[text]['cats']))
+                labelled_text = True
+
+            elif doc.filename_label:
+                labelled[text] = {
+                        'cats': doc.filename_label,
+                        'doc_id': doc.name
+                    }
+                labelled[text]['cats'].extend(labels)
+                labelled[text]['cats'] = list(set(labelled[text]['cats']))
+                labelled_text = True
 
             if labelled_text == False:
                 unlabelled[text] = None
-
-    if p:
-        p.put((labelled, unlabelled))
+    if q:
+        q.put((labelled, unlabelled))
     else:
         return labelled, unlabelled
