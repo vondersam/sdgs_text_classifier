@@ -9,10 +9,9 @@ from langdetect import detect
 import slate3k
 
 
-
 class Document:
     """
-    Doc containing all paragraphs from .doc, .docx, .pdf
+    Doc containing all paragraphs from .doc, .docx, .pdf, .txt and .html
     """
     def __init__(self, filepath, filename=None):
         self.paragraphs = []
@@ -90,7 +89,14 @@ class Document:
                 self.paragraphs.append(Text(paragraph))
 
 
-def extract_labels(doc, p=None):
+def extract_labels(doc, q=None):
+    """
+    Loop through all texts in a document, extracts labelled texts with labels
+    and collects unlabelled texts. Filters out texts related to Millennium Development Goals
+    :param doc:
+    :param q: queue for multiprocessing
+    :return: dictionary or tuple (queue) with labelled and unlabelled texts
+    """
     labelled = {}
     unlabelled = {}
 
@@ -123,7 +129,7 @@ def extract_labels(doc, p=None):
                         labelled_text = True
             if labelled_text == False:
                 unlabelled[text] = None
-    if p:
-        p.put((labelled, unlabelled))
+    if q:
+        q.put((labelled, unlabelled))
     else:
         return labelled, unlabelled
