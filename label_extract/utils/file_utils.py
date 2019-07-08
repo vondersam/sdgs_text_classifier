@@ -41,13 +41,13 @@ def save_files(labelled, unlabelled):
     :return: .csv and .json formats
     """
     pd.DataFrame.from_dict(labelled, orient='index').to_csv(
-        'labelled.csv')
+        'labelled_filenamelabel.csv')
     pd.DataFrame.from_dict(unlabelled, orient='index').to_csv(
-        'unlabelled.csv')
+        'unlabelled_filenamelabel.csv')
 
-    with open('labelled.json', 'w') as fo:
+    with open('labelled_filenamelabel.json', 'w') as fo:
         json.dump(labelled, fo)
-    with open('unlabelled.json', 'w') as fo:
+    with open('unlabelled_filenamelabel.json', 'w') as fo:
         json.dump(unlabelled, fo)
 
     stats = {

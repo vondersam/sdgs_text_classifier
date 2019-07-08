@@ -26,12 +26,11 @@ class Document:
         return self.filename_label
 
     def doc_label_from(self, filename):
-        # If 'goal no.' found in filename, process all doc with that label
-        pattern =  r'goal\W?((?:\b[1-9]\b|\b1[0-7]?\b))'
-        match = re.search(pattern, filename)
+        # If 'goal|SDG no.' found in filename, process all doc with that label
+        pattern =  r'(sdg|goal)\W?((?:[1-9]\b|1[0-7]?\b))'
+        match = re.search(pattern, filename, flags=re.IGNORECASE)
         if match:
-            self.filename_label = [int(match.group(1))]
-
+            self.filename_label = [int(match.group(2))]
 
     def from_any(self, filepath):
         base = os.path.basename(filepath)
@@ -102,7 +101,7 @@ class Document:
                 self.paragraphs.append(Text(paragraph))
 
 
-def extract_labels(doc, q=None):
+def extract_labels(doc, q):
     labelled = {}
     unlabelled = {}
     patterns = [
@@ -119,7 +118,7 @@ def extract_labels(doc, q=None):
         # To avoid extracting Millennium Goals
         if 'millennium' in text.lower():
             pass
-        if ' mdg ' in text.lower():
+        elif ' mdg ' in text.lower():
             pass
         else:
             labelled_text = False
@@ -128,27 +127,31 @@ def extract_labels(doc, q=None):
                 goals.extend(goals_extracted)
             text_labels = format_labels(goals)
 
+            # Use labels from text if available
             if text_labels:
-                labelled[text] = {
+                if text not in labelled:
+                    labelled[text] = {
                         'cats': text_labels,
                         'doc_id': doc.name
-                    }
-                labelled[text]['cats'].extend(labels)
+                        }
+                else:
+                    labelled[text]['cats'].extend(text_labels)
                 labelled[text]['cats'] = list(set(labelled[text]['cats']))
                 labelled_text = True
 
+            # Use filename label is available and no labels found in text
             elif doc.filename_label:
-                labelled[text] = {
-                        'cats': doc.filename_label,
-                        'doc_id': doc.name
-                    }
-                labelled[text]['cats'].extend(labels)
+                if text not in labelled:
+                    labelled[text] = {
+                            'cats': doc.filename_label,
+                            'doc_id': doc.name
+                            }
+                else:
+                    labelled[text]['cats'].extend(text_labels)
                 labelled[text]['cats'] = list(set(labelled[text]['cats']))
                 labelled_text = True
 
             if labelled_text == False:
                 unlabelled[text] = None
-    if q:
-        q.put((labelled, unlabelled))
-    else:
-        return labelled, unlabelled
+
+    q.put((labelled, unlabelled))

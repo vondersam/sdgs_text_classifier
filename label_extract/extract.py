@@ -9,21 +9,24 @@ import subprocess
 from tqdm import tqdm
 import time
 from multiprocessing import Process, Queue
+import re
 
 
 
 if __name__ == '__main__':
     start = time.time()
     main_dir = '/Users/samuelrodriguezmedina/Documents/ir4sdgs/crawl_sdgs/'
-    #folders = ['word', 'other_html', 'pdf', 'extra_pdf', 'extra_word', 'downloads', 'downloadable_pdfs']
-    folders = ['other_html', 'downloadable_pdfs', 'downloads']
+    folders = ['word', 'other_html', 'pdf', 'extra_pdf', 'extra_word', 'downloads', 'downloadable_pdfs']
     files = get_files(main_dir, folders)
     final_labelled = {}
     final_unlabelled = {}
     q = Queue()
+    pattern =  r'(sdg-?|goal)((?:[1-9]\b|1[0-7]?\b))'
 
     for file in tqdm(files):
-        if "goal-12" in file:
+        match = re.search(pattern, file, flags=re.IGNORECASE)
+        if match:
+            print(file)
             doc = Document(main_dir + file, filename=file)
             p = Process(target=extract_labels, args=(doc, q,))
             p.start()
