@@ -155,3 +155,15 @@ def extract_labels(doc, q):
                 unlabelled[text] = None
 
     q.put((labelled, unlabelled))
+
+
+def merge_dicts(old_dict, new_dict):
+    for new_text, new_values in new_dict.items():
+        if new_text in old_dict:
+            new_cats = list(set(old_dict[new_text]['cats'] + new_values['cats']))
+            old_dict[new_text]['cats'] = new_cats
+        else:
+            old_dict[new_text] = new_values
+    return old_dict
+
+

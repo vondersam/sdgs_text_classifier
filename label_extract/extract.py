@@ -1,7 +1,6 @@
 #https://textract.readthedocs.io/en/stable/
 import json
-from utils.document import Document, extract_labels
-from utils.extract_utils import trans_labels
+from utils.document import Document, extract_labels, merge_dicts
 from utils.file_utils import get_files, save_files
 import time
 import subprocess
@@ -21,7 +20,7 @@ if __name__ == '__main__':
     final_labelled = {}
     final_unlabelled = {}
     q = Queue()
-    pattern =  r'(sdg-?|goal)((?:[1-9]\b|1[0-7]?\b))'
+    pattern =  r'(goal-)((?:[1-9]\b|1[0-7]?\b))'
 
     for file in tqdm(files):
         match = re.search(pattern, file, flags=re.IGNORECASE)
@@ -31,8 +30,10 @@ if __name__ == '__main__':
             p = Process(target=extract_labels, args=(doc, q,))
             p.start()
             labelled, unlabelled = q.get()
-            final_labelled = {**final_labelled, **labelled}
-            final_unlabelled = {**final_unlabelled, **unlabelled}
+            final_labelled = merge_dicts(final_labelled, labelled)
+            final_unlabelled = merge_dicts(final_unlabelled, unlabelled)
+            #final_labelled = {**final_labelled, **labelled}
+            #final_unlabelled = {**final_unlabelled, **unlabelled}
             p.join()
 
     save_files(final_labelled, final_unlabelled)
