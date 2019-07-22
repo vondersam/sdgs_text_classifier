@@ -51,7 +51,8 @@ class Document:
             # Docx
             paragraphs = Docx(file).paragraphs
             for paragraphs in paragraphs:
-                self.paragraphs.append(Text(paragraphs))
+                if detect(paragraph) == 'en':
+                    self.paragraphs.append(Text(paragraphs))
         except:
             try:
                 # Doc
@@ -59,7 +60,8 @@ class Document:
                 # Decode and split by paragraphs
                 extracted_list = string.decode('utf-8').split('\n\n')
                 for paragraph in extracted_list:
-                    self.paragraphs.append(Text(paragraph))
+                    if detect(paragraph) == 'en':
+                        self.paragraphs.append(Text(paragraph))
             except:
                 # If Antiword does not work, convert to txt
                 subprocess.run(['textutil', '-convert', 'txt', file])
@@ -67,7 +69,8 @@ class Document:
                 with open(file, 'r') as f:
                     data = f.readlines()
                     for paragraph in data:
-                        self.paragraphs.append(Text(paragraph))
+                        if detect(paragraph) == 'en':
+                            self.paragraphs.append(Text(paragraph))
 
     def from_pdf(self, file):
         try:
@@ -77,7 +80,8 @@ class Document:
                     string = doc[i]
                     extracted_list = string.split('. \n')
                     for line in extracted_list:
-                        self.paragraphs.append(Text(line))
+                        if detect(line) == 'en':
+                            self.paragraphs.append(Text(line))
         except:
             pass
 
@@ -98,7 +102,8 @@ class Document:
         with open(file, 'r') as f:
             data = f.readlines()
             for paragraph in data:
-                self.paragraphs.append(Text(paragraph))
+                if detect(paragraph) == 'en':
+                    self.paragraphs.append(Text(paragraph))
 
 
 def extract_labels(doc, q):
@@ -118,7 +123,7 @@ def extract_labels(doc, q):
         # To avoid extracting Millennium Goals
         if 'millennium' in text.lower():
             pass
-        elif ' mdg ' in text.lower():
+        elif ' mdg' in text.lower():
             pass
         else:
             labelled_text = False
